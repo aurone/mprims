@@ -54,7 +54,7 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     goal_y_layout->addWidget(goal_disc_y_spinbox_);
     control_panel_layout->addLayout(goal_y_layout);
 
-    // control_panel_layout->addStretch();
+    control_panel_layout->addStretch();
 
     control_panel_widget->setLayout(control_panel_layout);
 
@@ -77,6 +77,9 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
 
     last_spinbox_value_ = 16;
     num_disc_angles_spinbox_->setValue(last_spinbox_value_);
+
+    start_disc_angle_spinbox_->setWrapping(true);
+    goal_disc_angle_spinbox_->setWrapping(true);
 
     render_widget_->set_num_angles(16);
 }
