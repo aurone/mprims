@@ -28,12 +28,33 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     goal_disc_y_spinbox_ = new QSpinBox;
 
     control_panel_layout->addWidget(discrete_mode_toggle_button_, Qt::AlignTop);
-    control_panel_layout->addWidget(num_disc_angles_spinbox_, Qt::AlignTop);
-    control_panel_layout->addWidget(start_disc_angle_spinbox_ /*, Qt::AlignTop*/);
-    control_panel_layout->addWidget(goal_disc_angle_spinbox_ /*, Qt::AlignTop*/);
-    control_panel_layout->addWidget(goal_disc_x_spinbox_ /*, Qt::AlignTop*/);
-    control_panel_layout->addWidget(goal_disc_y_spinbox_ /*, Qt::AlignTop*/);
-    control_panel_layout->addStretch();
+
+    QHBoxLayout* num_angles_layout = new QHBoxLayout;
+    num_angles_layout->addWidget(new QLabel(tr("Num Angles")));
+    num_angles_layout->addWidget(num_disc_angles_spinbox_);
+    control_panel_layout->addLayout(num_angles_layout);
+
+    QHBoxLayout* start_angle_layout = new QHBoxLayout;
+    start_angle_layout->addWidget(new QLabel(tr("Start Angle")));
+    start_angle_layout->addWidget(start_disc_angle_spinbox_);
+    control_panel_layout->addLayout(start_angle_layout);
+
+    QHBoxLayout* goal_angle_layout = new QHBoxLayout;
+    goal_angle_layout->addWidget(new QLabel(tr("Goal Angle")));
+    goal_angle_layout->addWidget(goal_disc_angle_spinbox_);
+    control_panel_layout->addLayout(goal_angle_layout);
+
+    QHBoxLayout* goal_x_layout = new QHBoxLayout;
+    goal_x_layout->addWidget(new QLabel(tr("Goal X")));
+    goal_x_layout->addWidget(goal_disc_x_spinbox_);
+    control_panel_layout->addLayout(goal_x_layout);
+
+    QHBoxLayout* goal_y_layout = new QHBoxLayout;
+    goal_y_layout->addWidget(new QLabel(tr("Goal Y")));
+    goal_y_layout->addWidget(goal_disc_y_spinbox_);
+    control_panel_layout->addLayout(goal_y_layout);
+
+    // control_panel_layout->addStretch();
 
     control_panel_widget->setLayout(control_panel_layout);
 
