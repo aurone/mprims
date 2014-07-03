@@ -179,14 +179,14 @@ void GLWidget::toggle_disc_mode()
     printf("Toggle Discrete Mode: %s!\n", (disc_mode_ ? "On" : "Off"));
 
     if (disc_mode_) {
-        start_tail_ = QPointF(0.0, 0.0);
-
-        left_button_down_ = false;
-        right_button_down_ = false;
+        // snap to nearest discrete angles
     }
     else {
 
     }
+
+    left_button_down_ = false;
+    right_button_down_ = false;
 }
 
 void GLWidget::set_num_angles(int num_angles)
@@ -212,14 +212,28 @@ void GLWidget::set_disc_goal_angle(int angle)
     update();
 }
 
-void GLWidget::set_disc_goal_x(int)
+void GLWidget::set_disc_goal_x(int disc_x)
 {
-    printf("Set Discrete Goal X!\n");
+    double dx = goal_head_.x() - goal_tail_.x();
+    double dy = goal_head_.y() - goal_tail_.y();
+    double angle = atan2(dy, dx);
+
+    goal_tail_.setX((double)disc_x);
+    goal_head_ = QPointF(goal_tail_.x() + cos(angle), goal_tail_.y() + sin(angle));
+
+    update();
 }
 
-void GLWidget::set_disc_goal_y(int)
+void GLWidget::set_disc_goal_y(int disc_y)
 {
-    printf("Set Discrete Goal Y!\n");
+    double dx = goal_head_.x() - goal_tail_.x();
+    double dy = goal_head_.y() - goal_tail_.y();
+    double angle = atan2(dy, dx);
+
+    goal_tail_.setY((double)disc_y);
+    goal_head_ = QPointF(goal_tail_.x() + cos(angle), goal_tail_.y() + sin(angle));
+
+    update();
 }
 
 void GLWidget::resizeGL(int width, int height)
