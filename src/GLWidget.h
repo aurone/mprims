@@ -67,6 +67,9 @@ private:
     void draw_widest_arcs();
 
     double realize_angle(int disc_angle, int num_angles);
+
+    double normalize_angle(double angle);
+    int discretize_angle(double angle, int num_angles);
 };
 
 #endif

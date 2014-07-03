@@ -133,6 +133,10 @@ void GLWidget::paintGL()
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
+    if (disc_mode_) {
+        return;
+    }
+
     if (event->button() == Qt::LeftButton) {
         start_tail_ = viewport_to_world(event->posF());
         printf("Selected Start Tail: (%0.3f, %0.3f)\n", start_tail_.x(), start_tail_.y());
@@ -152,6 +156,10 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (disc_mode_) {
+        return;
+    }
+
     if (left_button_down_) {
         start_head_ = viewport_to_world(event->posF());
     }
@@ -163,6 +171,10 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (disc_mode_) {
+        return;
+    }
+
     if (event->button() == Qt::LeftButton) {
         left_button_down_ = false;
     }
@@ -179,14 +191,37 @@ void GLWidget::toggle_disc_mode()
     printf("Toggle Discrete Mode: %s!\n", (disc_mode_ ? "On" : "Off"));
 
     if (disc_mode_) {
-        // snap to nearest discrete poses
-    }
-    else {
-        //
+        // snap to nearest discrete goal state
+        double goaldx = goal_head_.x() - goal_tail_.x();
+        double goaldy = goal_head_.y() - goal_tail_.y();
+        double goalangle = atan2(goaldy, goaldx);
+
+        double goal_x = std::round(goal_tail_.x());
+        double goal_y = std::round(goal_tail_.y());
+        double goal_angle = realize_angle(discretize_angle(goalangle, num_angles_), num_angles_);
+
+        goal_tail_ = QPointF(goal_x, goal_y);
+        goal_head_ = QPointF(goal_x + cos(goal_angle), goal_y + sin(goal_angle));
+
+        // snap to nearest discrete start state
+        double startdx = start_head_.x() - start_tail_.x();
+        double startdy = start_head_.y() - start_tail_.y();
+        double startangle = atan2(startdy, startdx);
+
+        double start_x = std::round(start_tail_.x());
+        double start_y = std::round(start_tail_.y());
+        double start_angle = realize_angle(discretize_angle(startangle, num_angles_), num_angles_);
+
+        start_tail_ = QPointF(start_x, start_y);
+        start_head_ = QPointF(start_x + cos(start_angle), start_y + sin(start_angle));
+
+        // TODO: update the gui to reflect the new discrete values
     }
 
     left_button_down_ = false;
     right_button_down_ = false;
+
+    update();
 }
 
 void GLWidget::set_num_angles(int num_angles)
@@ -428,4 +463,25 @@ void GLWidget::draw_widest_arcs()
 double GLWidget::realize_angle(int index, int num_angles)
 {
     return index * (2.0 * M_PI) / num_angles;
+}
+
+int GLWidget::discretize_angle(double angle, int num_angles)
+{
+    double thetaBinSize = 2.0 * M_PI / num_angles;
+    return (int)(normalize_angle(angle + thetaBinSize / 2.0) / (2.0 * M_PI) * (num_angles));
+}
+
+double GLWidget::normalize_angle(double angle)
+{
+    // get to the range from -2PI, 2PI
+    if (fabs(angle) > 2 * M_PI) {
+        angle = angle - ((int)(angle / (2 * M_PI))) * 2 * M_PI;
+    }
+
+    // get to the range 0, 2PI
+    if (angle < 0) {
+        angle += 2 * M_PI;
+    }
+
+    return angle;
 }
