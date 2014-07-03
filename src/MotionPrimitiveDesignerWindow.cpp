@@ -82,6 +82,8 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     goal_disc_angle_spinbox_->setWrapping(true);
 
     render_widget_->set_num_angles(16);
+
+    toggle_selection_mode();
 }
 
 void MotionPrimitiveDesignerWindow::update_num_angles(int i)
@@ -100,4 +102,10 @@ void MotionPrimitiveDesignerWindow::toggle_selection_mode()
 {
     render_widget_->toggle_disc_mode();
     discrete_mode_toggle_button_->setText(QString("Toggle %1 Mode").arg(render_widget_->discrete_mode() ? "Continuous" : "Discrete"));
+
+    num_disc_angles_spinbox_->setEnabled(render_widget_->discrete_mode());
+    start_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
+    goal_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
+    goal_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
+    goal_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());
 }

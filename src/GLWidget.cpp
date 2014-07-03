@@ -179,10 +179,10 @@ void GLWidget::toggle_disc_mode()
     printf("Toggle Discrete Mode: %s!\n", (disc_mode_ ? "On" : "Off"));
 
     if (disc_mode_) {
-        // snap to nearest discrete angles
+        // snap to nearest discrete poses
     }
     else {
-
+        //
     }
 
     left_button_down_ = false;
