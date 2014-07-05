@@ -21,6 +21,8 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     QVBoxLayout* control_panel_layout = new QVBoxLayout;
 
     discrete_mode_toggle_button_ = new QPushButton(tr("Toggle Discrete Mode"));
+    add_goal_button_ = new QPushButton(tr("Add Goal"));
+    remove_goal_button_ = new QPushButton(tr("Remove Goal"));
     num_disc_angles_spinbox_ = new DiscreteAnglesSpinBox;
     start_disc_angle_spinbox_ = new QSpinBox;
     start_disc_x_spinbox_ = new QSpinBox;
@@ -30,6 +32,8 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     goal_disc_y_spinbox_ = new QSpinBox;
 
     control_panel_layout->addWidget(discrete_mode_toggle_button_, Qt::AlignTop);
+    control_panel_layout->addWidget(add_goal_button_);
+    control_panel_layout->addWidget(remove_goal_button_);
 
     QHBoxLayout* num_angles_layout = new QHBoxLayout;
     num_angles_layout->addWidget(new QLabel(tr("Num Angles")));
@@ -73,6 +77,8 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     setCentralWidget(render_widget_);
 
     connect(discrete_mode_toggle_button_, SIGNAL(clicked()), this, SLOT(toggle_selection_mode()));
+    connect(add_goal_button_, SIGNAL(clicked()), render_widget_, SLOT(add_discrete_goal()));
+    connect(remove_goal_button_, SIGNAL(clicked()), render_widget_, SLOT(remove_discrete_goal()));
     connect(num_disc_angles_spinbox_, SIGNAL(valueChanged(int)), this, SLOT(update_num_angles(int)));
     connect(start_disc_angle_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_angle(int)));
     connect(start_disc_x_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_x(int)));
@@ -128,4 +134,5 @@ void MotionPrimitiveDesignerWindow::toggle_selection_mode()
     goal_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());
+    remove_goal_button_->setEnabled(render_widget_->have_selection());
 }

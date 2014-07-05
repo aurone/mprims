@@ -224,6 +224,16 @@ void GLWidget::toggle_disc_mode()
     update();
 }
 
+void GLWidget::add_discrete_goal()
+{
+
+}
+
+void GLWidget::remove_discrete_goal()
+{
+
+}
+
 void GLWidget::set_num_angles(int num_angles)
 {
     printf("Set Num Angles to %d!\n", num_angles);

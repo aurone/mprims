@@ -20,6 +20,7 @@ public:
     const Pose2_disc& disc_max() const { return max_; }
 
     bool discrete_mode() const { return disc_mode_; }
+    bool have_selection() const { return false; }
 
     void initializeGL();
     void paintGL();
@@ -31,6 +32,8 @@ public:
 public slots:
 
     void toggle_disc_mode();
+    void add_discrete_goal();
+    void remove_discrete_goal();
     void set_num_angles(int);
     void set_disc_start_angle(int);
     void set_disc_start_x(int);

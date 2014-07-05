@@ -29,6 +29,8 @@ private:
     QDockWidget*    control_panel_dock_widget_;
 
     QPushButton*    discrete_mode_toggle_button_;
+    QPushButton*    add_goal_button_;
+    QPushButton*    remove_goal_button_;
 
     DiscreteAnglesSpinBox*  num_disc_angles_spinbox_;
     QSpinBox*               start_disc_angle_spinbox_;
