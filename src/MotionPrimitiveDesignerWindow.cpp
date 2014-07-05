@@ -23,6 +23,8 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     discrete_mode_toggle_button_ = new QPushButton(tr("Toggle Discrete Mode"));
     num_disc_angles_spinbox_ = new DiscreteAnglesSpinBox;
     start_disc_angle_spinbox_ = new QSpinBox;
+    start_disc_x_spinbox_ = new QSpinBox;
+    start_disc_y_spinbox_ = new QSpinBox;
     goal_disc_angle_spinbox_ = new QSpinBox;
     goal_disc_x_spinbox_ = new QSpinBox;
     goal_disc_y_spinbox_ = new QSpinBox;
@@ -38,6 +40,16 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     start_angle_layout->addWidget(new QLabel(tr("Start Angle")));
     start_angle_layout->addWidget(start_disc_angle_spinbox_);
     control_panel_layout->addLayout(start_angle_layout);
+
+    QHBoxLayout* start_x_layout = new QHBoxLayout;
+    start_x_layout->addWidget(new QLabel(tr("Start X")));
+    start_x_layout->addWidget(start_disc_x_spinbox_);
+    control_panel_layout->addLayout(start_x_layout);
+
+    QHBoxLayout* start_y_layout = new QHBoxLayout;
+    start_y_layout->addWidget(new QLabel(tr("Start Y")));
+    start_y_layout->addWidget(start_disc_y_spinbox_);
+    control_panel_layout->addLayout(start_y_layout);
 
     QHBoxLayout* goal_angle_layout = new QHBoxLayout;
     goal_angle_layout->addWidget(new QLabel(tr("Goal Angle")));
@@ -63,6 +75,8 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     connect(discrete_mode_toggle_button_, SIGNAL(clicked()), this, SLOT(toggle_selection_mode()));
     connect(num_disc_angles_spinbox_, SIGNAL(valueChanged(int)), this, SLOT(update_num_angles(int)));
     connect(start_disc_angle_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_angle(int)));
+    connect(start_disc_x_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_x(int)));
+    connect(start_disc_y_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_y(int)));
     connect(goal_disc_angle_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_goal_angle(int)));
     connect(goal_disc_x_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_goal_x(int)));
     connect(goal_disc_y_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_goal_y(int)));
@@ -70,6 +84,10 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     num_disc_angles_spinbox_->setMinimum(1);
     num_disc_angles_spinbox_->setMaximum(256);
 
+    start_disc_x_spinbox_->setMinimum(render_widget_->disc_min().x);
+    start_disc_x_spinbox_->setMaximum(render_widget_->disc_max().x);
+    start_disc_y_spinbox_->setMinimum(render_widget_->disc_min().y);
+    start_disc_y_spinbox_->setMaximum(render_widget_->disc_max().y);
     goal_disc_x_spinbox_->setMinimum(render_widget_->disc_min().x);
     goal_disc_x_spinbox_->setMaximum(render_widget_->disc_max().x);
     goal_disc_y_spinbox_->setMinimum(render_widget_->disc_min().y);
@@ -105,6 +123,8 @@ void MotionPrimitiveDesignerWindow::toggle_selection_mode()
 
     num_disc_angles_spinbox_->setEnabled(render_widget_->discrete_mode());
     start_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
+    start_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
+    start_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());

@@ -32,6 +32,8 @@ private:
 
     DiscreteAnglesSpinBox*  num_disc_angles_spinbox_;
     QSpinBox*               start_disc_angle_spinbox_;
+    QSpinBox*               start_disc_x_spinbox_;
+    QSpinBox*               start_disc_y_spinbox_;
     QSpinBox*               goal_disc_angle_spinbox_;
     QSpinBox*               goal_disc_x_spinbox_;
     QSpinBox*               goal_disc_y_spinbox_;

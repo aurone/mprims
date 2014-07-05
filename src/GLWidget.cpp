@@ -239,6 +239,31 @@ void GLWidget::set_disc_start_angle(int angle)
     update();
 }
 
+void GLWidget::set_disc_start_x(int disc_x)
+{
+    double dx = start_head_.x() - start_tail_.x();
+    double dy = start_head_.y() - start_tail_.y();
+    double angle = atan2(dy, dx);
+
+    start_tail_.setX((double)disc_x);
+    start_head_ = QPointF(start_tail_.x() + cos(angle), start_tail_.y() + sin(angle));
+
+    update();
+}
+
+void GLWidget::set_disc_start_y(int disc_y)
+{
+    double dx = start_head_.x() - start_tail_.x();
+    double dy = start_head_.y() - start_tail_.y();
+    double angle = atan2(dy, dx);
+
+    start_tail_.setY((double)disc_y);
+    start_head_ = QPointF(start_tail_.x() + cos(angle), start_tail_.y() + sin(angle));
+
+    update();
+}
+
+
 void GLWidget::set_disc_goal_angle(int angle)
 {
     printf("Set Discrete Goal Angle to %d!\n", angle);
@@ -364,100 +389,10 @@ void GLWidget::draw_line(const std::vector<Pose2_cont>& motion)
 
 void GLWidget::draw_discrete_neighbors()
 {
-/*
-    const int num_angles = 16;
-    auto realize_angle = [](int index, int num_angles) { return index * 2.0 * M_PI / num_angles; };
-    auto interp = [](double from, double to, double a) { return (1.0 - a) * from + a * to; };
-
-    // draw the set start/goal guidelines
-    glColor3f(0.0f, 0.0f, 1.0f);
-    if (left_button_down_) {
-        glBegin(GL_LINES);
-        glVertex2d(start_tail_.x(), start_tail_.y());
-        glVertex2d(start_head_.x(), start_head_.y());
-        glEnd();
-    }
-    if (right_button_down_) {
-        glBegin(GL_LINES);
-        glVertex2d(goal_tail_.x(), goal_tail_.y());
-        glVertex2d(goal_head_.x(), goal_head_.y());
-        glEnd();
-    }
-
-    Pose2_cont start = { start_tail_.x(),
-                         start_tail_.y(),
-                         atan2(start_head_.y() - start_tail_.y(), start_head_.x() - start_tail_.x()) };
-    draw_arrow(start.x, start.y, start.yaw);
-
-    // create goal poses from last mouse event
-    std::vector<Pose2_cont> poses;
-
-    double nominal_heading = atan2(goal_head_.y() - goal_tail_.y(), goal_head_.x() - goal_tail_.x());
-
-    poses.push_back({ goal_tail_.x(), goal_tail_.y(), nominal_heading });
-
-    double floor_x = std::floor(goal_tail_.x());
-    double floor_y = std::floor(goal_tail_.y());
-    double ceil_x = std::ceil(goal_tail_.x());
-    double ceil_y = std::ceil(goal_tail_.y());
-    poses.push_back({ floor_x, floor_y, nominal_heading });
-    poses.push_back({ floor_x, ceil_y, nominal_heading });
-    poses.push_back({ ceil_x, floor_y, nominal_heading });
-    poses.push_back({ ceil_x, ceil_y, nominal_heading });
-
-    // for (const Pose2_cont goal : poses)
-    {
-        draw_arrow(poses.front().x, poses.front().y, poses.front().yaw);
-    }
-
-    for (const Pose2_cont goal : poses)
-    {
-        std::vector<Pose2_cont> motion = generate_unicycle_motion(start, goal);
-        draw_line(motion);
-    }
-    */
 }
 
 void GLWidget::draw_widest_arcs()
 {
-/*
-    const int num_angles = 16;
-    auto realize_angle = [](int index, int num_angles) { return index * 2.0 * M_PI / num_angles; };
-    auto interp = [](double from, double to, double a) { return (1.0 - a) * from + a * to; };
-    Pose2_cont start(0.0, 1.0, 0.0);
-    std::vector<std::vector<Pose2_cont>> curves;
-    for (double x = min_.x; x <= max_.x; x += 1.0) {
-        for (double y = min_.y; y <= max_.y; y += 1.0)   {
-            // find the most significant angle change that still gives us a curve at this point
-            // int best_dangle_diff = -1;
-            int best_dangle_diff = num_angles;
-            std::vector<Pose2_cont> most_outrageous_motion;
-            for (int aind = 0; aind < num_angles; ++aind) {
-                if (aind == (num_angles >> 1) - 1) {
-                    continue;
-                }
-                int danglediff = std::min(aind, num_angles - aind);
-                // if (danglediff > best_dangle_diff) {
-                if (danglediff < best_dangle_diff) {
-                    Pose2_cont goal = { x, y, realize_angle(aind, num_angles) };
-                    std::vector<Pose2_cont> motion = generate_unicycle_motion(start, goal);
-                    if (!motion.empty()) {
-                        best_dangle_diff = danglediff;
-                        most_outrageous_motion = std::move(motion);
-                    }
-                }
-            }
-
-            if (!most_outrageous_motion.empty()) {
-                const Pose2_cont& goal = most_outrageous_motion.back();
-                if (draw_arrows_) {
-                    draw_arrow(goal.x, goal.y, goal.yaw);
-                }
-                draw_line(most_outrageous_motion);
-            }
-        }
-    }
-*/
 }
 
 double GLWidget::realize_angle(int index, int num_angles)

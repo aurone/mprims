@@ -33,6 +33,8 @@ public slots:
     void toggle_disc_mode();
     void set_num_angles(int);
     void set_disc_start_angle(int);
+    void set_disc_start_x(int);
+    void set_disc_start_y(int);
     void set_disc_goal_angle(int);
     void set_disc_goal_x(int);
     void set_disc_goal_y(int);
