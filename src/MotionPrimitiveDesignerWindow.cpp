@@ -76,10 +76,14 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
 
     setCentralWidget(render_widget_);
 
-    connect(discrete_mode_toggle_button_, SIGNAL(clicked()), this, SLOT(toggle_selection_mode()));
-    connect(add_goal_button_, SIGNAL(clicked()), render_widget_, SLOT(add_discrete_goal()));
-    connect(remove_goal_button_, SIGNAL(clicked()), render_widget_, SLOT(remove_discrete_goal()));
-    connect(num_disc_angles_spinbox_, SIGNAL(valueChanged(int)), this, SLOT(update_num_angles(int)));
+    connect(discrete_mode_toggle_button_,   SIGNAL(clicked()),          this, SLOT(toggle_selection_mode()));
+    connect(num_disc_angles_spinbox_,       SIGNAL(valueChanged(int)),  this, SLOT(update_num_angles(int)));
+
+    connect(add_goal_button_,               SIGNAL(clicked()),          render_widget_, SLOT(add_discrete_goal()));
+    connect(remove_goal_button_,            SIGNAL(clicked()),          render_widget_, SLOT(remove_discrete_goal()));
+
+    connect(render_widget_, SIGNAL(gui_changed()), this, SLOT(update_gui()));
+
     connect(start_disc_angle_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_angle(int)));
     connect(start_disc_x_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_x(int)));
     connect(start_disc_y_spinbox_, SIGNAL(valueChanged(int)), render_widget_, SLOT(set_disc_start_y(int)));
@@ -125,6 +129,11 @@ bool MotionPrimitiveDesignerWindow::is_pow2(unsigned i)
 void MotionPrimitiveDesignerWindow::toggle_selection_mode()
 {
     render_widget_->toggle_disc_mode();
+    update_gui();
+}
+
+void MotionPrimitiveDesignerWindow::update_gui()
+{
     discrete_mode_toggle_button_->setText(QString("Toggle %1 Mode").arg(render_widget_->discrete_mode() ? "Continuous" : "Discrete"));
 
     num_disc_angles_spinbox_->setEnabled(render_widget_->discrete_mode());
@@ -134,5 +143,6 @@ void MotionPrimitiveDesignerWindow::toggle_selection_mode()
     goal_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
     goal_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());
-    remove_goal_button_->setEnabled(render_widget_->have_selection());
+    remove_goal_button_->setEnabled(render_widget_->goal_selected());
 }
+

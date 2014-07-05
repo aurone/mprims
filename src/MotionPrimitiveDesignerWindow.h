@@ -16,6 +16,10 @@ public:
 
     // virtual QSize sizeHint() const;
 
+public slots:
+
+    void update_gui();
+
 private slots:
 
     void update_num_angles(int i);

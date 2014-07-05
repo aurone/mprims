@@ -1,9 +1,18 @@
 #include <cmath>
 #include <cstdio>
+#include <Eigen/Dense>
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "GLWidget.h"
 #include "unicycle_motions.h"
+
+#define DEBUG
+
+#ifdef DEBUG
+#define DEBUG_PRINT(fmt, ...) printf(fmt "\n", ##__VA_ARGS__); fflush(stdout)
+#else
+#define DEBUG_PRINT(fmt, ...)
+#endif
 
 static int discretize(double d, double res)
 {
@@ -15,69 +24,41 @@ static double continuize(int i, double res)
     return (double)(i * res);
 }
 
-static const double INITIAL_START_HEADING = 11.25 * M_PI / 180.0;
-static const double INITIAL_GOAL_HEADING = 0 * M_PI / 180.0;
-
-static const int MOTION_DX = 10;
-static const int MOTION_DY = 1;
-static const int APPROX_DIST = sqrt((double)(MOTION_DX * MOTION_DX + MOTION_DY * MOTION_DY));
-static const double INITIAL_GOAL_X = APPROX_DIST * cos(INITIAL_START_HEADING);
-static const double INITIAL_GOAL_Y = APPROX_DIST * sin(INITIAL_START_HEADING);
-
 GLWidget::GLWidget(QWidget* parent) :
-    QGLWidget(parent),
-    disc_mode_(true),
-    min_(-15, -15, 0),
-    max_(15, 15, 360),
-    left_button_down_(false),
-    right_button_down_(false),
-    start_tail_(0.0, 0.0),
-    goal_tail_(INITIAL_GOAL_X, INITIAL_GOAL_Y),
-    start_head_(start_tail_.x() + cos(INITIAL_START_HEADING), start_tail_.y() + sin(INITIAL_START_HEADING)),
-    goal_head_(goal_tail_.x() + cos(INITIAL_GOAL_HEADING), goal_tail_.y() + sin(INITIAL_GOAL_HEADING)),
-    draw_arrows_(true),
-    num_angles_(16)
+    QGLWidget(parent)
 {
+    construct();
 }
 
 GLWidget::GLWidget(QGLContext* context, QWidget* parent, const QGLWidget* shareWidget, Qt::WindowFlags f) :
-    QGLWidget(context, parent, shareWidget, f),
-    disc_mode_(true),
-    min_(-15, -15, 0),
-    max_(15, 15, 360),
-    left_button_down_(false),
-    right_button_down_(false),
-    start_tail_(0.0, 0.0),
-    goal_tail_(INITIAL_GOAL_X, INITIAL_GOAL_Y),
-    start_head_(start_tail_.x() + cos(INITIAL_START_HEADING), start_tail_.y() + sin(INITIAL_START_HEADING)),
-    goal_head_(goal_tail_.x() + cos(INITIAL_GOAL_HEADING), goal_tail_.y() + sin(INITIAL_GOAL_HEADING)),
-    draw_arrows_(true),
-    num_angles_(16)
+    QGLWidget(context, parent, shareWidget, f)
 {
-
+    construct();
 }
 
 GLWidget::GLWidget(const QGLFormat& format, QWidget* parent, const QGLWidget* shareWidget, Qt::WindowFlags f) :
-    QGLWidget(format, parent, shareWidget, f),
-    disc_mode_(true),
-    min_(-15, -15, 0),
-    max_(15, 15, 360),
-    left_button_down_(false),
-    right_button_down_(false),
-    start_tail_(0.0, 0.0),
-    goal_tail_(INITIAL_GOAL_X, INITIAL_GOAL_Y),
-    start_head_(start_tail_.x() + cos(INITIAL_START_HEADING), start_tail_.y() + sin(INITIAL_START_HEADING)),
-    goal_head_(goal_tail_.x() + cos(INITIAL_GOAL_HEADING), goal_tail_.y() + sin(INITIAL_GOAL_HEADING)),
-    draw_arrows_(true),
-    num_angles_(16)
+    QGLWidget(format, parent, shareWidget, f)
 {
+    construct();
+}
 
+void GLWidget::construct()
+{
+    disc_mode_ = true;
+    min_ = Pose2_disc(-15, -15, 0);
+    max_ = Pose2_disc(15, 15, 360);
+
+    start_ = Pose2_cont(0.0, 0.0, 0.0);
+    goals_.push_back(Pose2_cont(10.0, 0.0, 0.0));
+
+    left_button_down_ = false;
+    right_button_down_ = false;
+    num_angles_ = 16;
 }
 
 void GLWidget::initializeGL()
 {
     glClearColor(1.0f, 0.98f, 0.98f, 1.0f);
-    // glClearColor(1.0f, 1.0f, 0.941f, 1.0f);
 }
 
 void GLWidget::paintGL()
@@ -87,45 +68,26 @@ void GLWidget::paintGL()
 
     draw_grid();
 
-    const int num_angles = 16;
-    auto interp = [](double from, double to, double a) { return (1.0 - a) * from + a * to; };
-
     if (!disc_mode_)
     {
-        // draw the set start/goal guidelines
-        glColor3f(0.0f, 0.0f, 1.0f);
-        if (left_button_down_) {
-            glBegin(GL_LINES);
-            glVertex2d(start_tail_.x(), start_tail_.y());
-            glVertex2d(start_head_.x(), start_head_.y());
-            glEnd();
-        }
-        if (right_button_down_) {
-            glBegin(GL_LINES);
-            glVertex2d(goal_tail_.x(), goal_tail_.y());
-            glVertex2d(goal_head_.x(), goal_head_.y());
-            glEnd();
-        }
-    }
+        draw_guidelines();
+   }
 
-    double start_angle = atan2(start_head_.y() - start_tail_.y(), start_head_.x() - start_tail_.x());
-    Pose2_cont start = { start_tail_.x(), start_tail_.y(), start_angle };
-
-    std::vector<Pose2_cont> poses;
-
-    double goal_angle = atan2(goal_head_.y() - goal_tail_.y(), goal_head_.x() - goal_tail_.x());
-    poses.push_back({ goal_tail_.x(), goal_tail_.y(), goal_angle });
-    for (const Pose2_cont goal : poses)
-    {
-        std::vector<Pose2_cont> motion = generate_unicycle_motion(start, goal);
+    for (const Pose2_cont goal : goals_) {
+        std::vector<Pose2_cont> motion = generate_unicycle_motion(start_, goal);
         draw_line(motion);
     }
 
+    // draw the selection
+    draw_selection();
+
     // draw the start
-    draw_arrow(start.x, start.y, start.yaw, 0.0, 1.0, 0.0);
+    draw_arrow(start_.x, start_.y, start_.yaw, 0.0, 1.0, 0.0);
 
     // draw the goal
-    draw_arrow(poses.front().x, poses.front().y, poses.front().yaw, 1.0, 0.0, 0.0);
+    for (const Pose2_cont goal : goals_) {
+        draw_arrow(goal.x, goal.y, goal.yaw, 1.0, 0.0, 0.0);
+    }
 
     glFlush();
     swapBuffers();
@@ -133,46 +95,75 @@ void GLWidget::paintGL()
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (disc_mode_) {
-        return;
+    QPointF world_point = viewport_to_world(event->posF());
+
+    // select the target pose
+    if (event->button() == Qt::LeftButton || event->button() == Qt::RightButton) {
+        clear_selection();
+        select_at(world_point);
+        if (selection_.goal_selected || selection_.start_selected) {
+            emit gui_changed();
+        }
     }
 
     if (event->button() == Qt::LeftButton) {
-        start_tail_ = viewport_to_world(event->posF());
-        printf("Selected Start Tail: (%0.3f, %0.3f)\n", start_tail_.x(), start_tail_.y());
         left_button_down_ = true;
+        left_button_down_pos_ = world_point;
         update();
     }
     else if (event->button() == Qt::RightButton) {
-        goal_tail_ = viewport_to_world(event->posF());
-        printf("Selected Goal Tail: (%0.3f, %0.3f)\n", goal_tail_.x(), goal_tail_.y());
         right_button_down_ = true;
+        right_button_down_pos_ = world_point;
         update();
-    }
-    else {
-        draw_arrows_ = !draw_arrows_;
     }
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (disc_mode_) {
-        return;
-    }
+    QPointF world_point = viewport_to_world(event->posF());
 
     if (left_button_down_) {
-        start_head_ = viewport_to_world(event->posF());
+        // translate the selected pose
+        if (selection_.start_selected) {
+            start_.x = world_point.x();
+            start_.y = world_point.y();
+            DEBUG_PRINT("Moved the start to (%0.3f, %0.3f)", world_point.x(), world_point.y());
+        }
+        else if (selection_.goal_selected) {
+            selection_.selected_goal->x = world_point.x();
+            selection_.selected_goal->y = world_point.y();
+            DEBUG_PRINT("Moved the selected goal to (%0.3f, %0.3f)", world_point.x(), world_point.y());
+        }
     }
     if (right_button_down_) {
-        goal_head_ = viewport_to_world(event->posF());
+        // rotate the selected pose
+        double dx = world_point.x() - right_button_down_pos_.x();
+        double dy = world_point.y() - right_button_down_pos_.y();
+        double angle = atan2(dy, dx);
+
+        if (selection_.start_selected) {
+            start_.yaw = angle;
+            DEBUG_PRINT("Moved the start yaw to %0.3f", angle);
+        }
+        else if (selection_.goal_selected) {
+            selection_.selected_goal->yaw = angle;
+            DEBUG_PRINT("Moved the selected goal yaw to %0.3f", angle);
+        }
     }
+
     update();
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    DEBUG_PRINT("Mouse release event");
     if (disc_mode_) {
-        return;
+        // snap to nearest discrete pose
+        DEBUG_PRINT("Snapping to discrete poses");
+        start_ = discretize(start_);
+        for (Pose2_cont& pose : goals_) {
+            pose = discretize(pose);
+        }
     }
 
     if (event->button() == Qt::LeftButton) {
@@ -181,41 +172,79 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     else if (event->button() == Qt::RightButton) {
         right_button_down_ = false;
     }
+
     update();
+}
+
+bool GLWidget::hits_start(const QPointF& point) const
+{
+    return hits_arrow(start_, point);
+}
+
+bool GLWidget::hits_goal(std::list<Pose2_cont>::iterator goal_it, const QPointF& point) const
+{
+    return hits_arrow(*goal_it, point);
+}
+
+bool GLWidget::hits_arrow(const Pose2_cont& pose, const QPointF& point) const
+{
+    bool selected = false;
+
+    Eigen::Vector3d pv(point.x(), point.y(), 0.0);
+
+    Eigen::Affine3d transform = Eigen::Translation3d(pose.x, pose.y, 0.0) * Eigen::AngleAxisd(pose.yaw, Eigen::Vector3d::UnitZ());
+
+    {
+        Eigen::Vector3d a(0.166, 0.3, 0.0);
+        Eigen::Vector3d b(0.166, -0.3, 0.0);
+        Eigen::Vector3d c(0.5, 0.0, 0.0);
+
+        a = transform * a;
+        b = transform * b;
+        c = transform * c;
+
+        selected |= point_in_triangle(pv, a, b, c);
+    }
+
+    {
+        Eigen::Vector3d a(-0.5, -0.15, 0.0);
+        Eigen::Vector3d b(0.166, -0.15, 0.0);
+        Eigen::Vector3d c(-0.15, 0.15, 0.0);
+
+        a = transform * a;
+        b = transform * b;
+        c = transform * c;
+
+        selected |= point_in_triangle(pv, a, b, c);
+    }
+
+    {
+        Eigen::Vector3d a(0.166, -0.15, 0.0);
+        Eigen::Vector3d b(0.166,  0.15, 0.0);
+        Eigen::Vector3d c(-0.5, 0.15, 0.0);
+
+        a = transform * a;
+        b = transform * b;
+        c = transform * c;
+
+        selected |= point_in_triangle(pv, a, b, c);
+    }
+
+    return selected;
 }
 
 void GLWidget::toggle_disc_mode()
 {
     disc_mode_ = !(disc_mode_);
 
-    printf("Toggle Discrete Mode: %s!\n", (disc_mode_ ? "On" : "Off"));
+    DEBUG_PRINT("Toggle Discrete Mode: %s!", (disc_mode_ ? "On" : "Off"));
 
+    // continuous -> discrete mode
     if (disc_mode_) {
-        // snap to nearest discrete goal state
-        double goaldx = goal_head_.x() - goal_tail_.x();
-        double goaldy = goal_head_.y() - goal_tail_.y();
-        double goalangle = atan2(goaldy, goaldx);
-
-        double goal_x = std::round(goal_tail_.x());
-        double goal_y = std::round(goal_tail_.y());
-        double goal_angle = realize_angle(discretize_angle(goalangle, num_angles_), num_angles_);
-
-        goal_tail_ = QPointF(goal_x, goal_y);
-        goal_head_ = QPointF(goal_x + cos(goal_angle), goal_y + sin(goal_angle));
-
-        // snap to nearest discrete start state
-        double startdx = start_head_.x() - start_tail_.x();
-        double startdy = start_head_.y() - start_tail_.y();
-        double startangle = atan2(startdy, startdx);
-
-        double start_x = std::round(start_tail_.x());
-        double start_y = std::round(start_tail_.y());
-        double start_angle = realize_angle(discretize_angle(startangle, num_angles_), num_angles_);
-
-        start_tail_ = QPointF(start_x, start_y);
-        start_head_ = QPointF(start_x + cos(start_angle), start_y + sin(start_angle));
-
-        // TODO: update the gui to reflect the new discrete values
+        start_ = discretize(start_);
+        for (Pose2_cont& pose : goals_) {
+            pose = discretize(pose);
+        }
     }
 
     left_button_down_ = false;
@@ -226,17 +255,24 @@ void GLWidget::toggle_disc_mode()
 
 void GLWidget::add_discrete_goal()
 {
-
+    goals_.push_back(Pose2_cont(0.0, 0.0, 0.0));
+    emit gui_changed();
+    update();
 }
 
 void GLWidget::remove_discrete_goal()
 {
-
+    if (selection_.goal_selected) {
+        goals_.erase(selection_.selected_goal);
+        selection_.goal_selected = false;
+        update();
+        emit gui_changed();
+    }
 }
 
 void GLWidget::set_num_angles(int num_angles)
 {
-    printf("Set Num Angles to %d!\n", num_angles);
+    DEBUG_PRINT("Set Num Angles to %d!", num_angles);
     num_angles_ = num_angles;
     update();
 }
@@ -244,65 +280,41 @@ void GLWidget::set_num_angles(int num_angles)
 void GLWidget::set_disc_start_angle(int angle)
 {
     printf("Set Discrete Start Angle to %d!\n", angle);
-    start_head_ = QPointF(start_tail_.x() + cos(realize_angle(angle, num_angles_)),
-                          start_tail_.y() + sin(realize_angle(angle, num_angles_)));
+    start_.yaw = realize_angle(angle, num_angles_);
     update();
 }
 
 void GLWidget::set_disc_start_x(int disc_x)
 {
-    double dx = start_head_.x() - start_tail_.x();
-    double dy = start_head_.y() - start_tail_.y();
-    double angle = atan2(dy, dx);
-
-    start_tail_.setX((double)disc_x);
-    start_head_ = QPointF(start_tail_.x() + cos(angle), start_tail_.y() + sin(angle));
-
+    start_.x = (double)disc_x;
     update();
 }
 
 void GLWidget::set_disc_start_y(int disc_y)
 {
-    double dx = start_head_.x() - start_tail_.x();
-    double dy = start_head_.y() - start_tail_.y();
-    double angle = atan2(dy, dx);
-
-    start_tail_.setY((double)disc_y);
-    start_head_ = QPointF(start_tail_.x() + cos(angle), start_tail_.y() + sin(angle));
-
+    start_.y = (double)disc_y;
     update();
 }
-
 
 void GLWidget::set_disc_goal_angle(int angle)
 {
     printf("Set Discrete Goal Angle to %d!\n", angle);
-    goal_head_ = QPointF(goal_tail_.x() + cos(realize_angle(angle, num_angles_)),
-                         goal_tail_.y() + sin(realize_angle(angle, num_angles_)));
+    assert(selection_.goal_selected);
+    selection_.selected_goal->yaw = realize_angle(angle, num_angles_);
     update();
 }
 
 void GLWidget::set_disc_goal_x(int disc_x)
 {
-    double dx = goal_head_.x() - goal_tail_.x();
-    double dy = goal_head_.y() - goal_tail_.y();
-    double angle = atan2(dy, dx);
-
-    goal_tail_.setX((double)disc_x);
-    goal_head_ = QPointF(goal_tail_.x() + cos(angle), goal_tail_.y() + sin(angle));
-
+    assert(selection_.goal_selected);
+    selection_.selected_goal->x = (double)disc_x;
     update();
 }
 
 void GLWidget::set_disc_goal_y(int disc_y)
 {
-    double dx = goal_head_.x() - goal_tail_.x();
-    double dy = goal_head_.y() - goal_tail_.y();
-    double angle = atan2(dy, dx);
-
-    goal_tail_.setY((double)disc_y);
-    goal_head_ = QPointF(goal_tail_.x() + cos(angle), goal_tail_.y() + sin(angle));
-
+    assert(selection_.goal_selected);
+    selection_.selected_goal->y = (double)disc_y;
     update();
 }
 
@@ -364,13 +376,41 @@ void GLWidget::draw_grid()
     glEnd();
 }
 
-void GLWidget::draw_arrow(double x, double y, double yaw, double r, double g, double b)
+void GLWidget::draw_selection()
+{
+    if (selection_.start_selected) {
+        draw_arrow(start_.x, start_.y, start_.yaw, 1.0, 0.5, 1.0, 1.1);
+    }
+    else if (selection_.goal_selected) {
+        draw_arrow(selection_.selected_goal->x, selection_.selected_goal->y, selection_.selected_goal->yaw, 1.0, 0.5, 1.0, 1.01);
+    }
+}
+
+void GLWidget::draw_guidelines()
+{
+    glColor3f(0.0f, 0.0f, 1.0f);
+    if (left_button_down_) {
+        glBegin(GL_LINES);
+        glVertex2d(start_tail_.x(), start_tail_.y());
+        glVertex2d(start_head_.x(), start_head_.y());
+        glEnd();
+    }
+    if (right_button_down_) {
+        glBegin(GL_LINES);
+        glVertex2d(goal_tail_.x(), goal_tail_.y());
+        glVertex2d(goal_head_.x(), goal_head_.y());
+        glEnd();
+    }
+}
+
+void GLWidget::draw_arrow(double x, double y, double yaw, double r, double g, double b, double scale)
 {
     glPushMatrix();
     glColor3f(r, g, b);
     glLoadIdentity();
     glTranslated(x, y, 0);
     glRotated(yaw * 180.0 / M_PI, 0.0, 0.0, 1.0);
+    glScaled(scale, scale, scale);
     glBegin(GL_TRIANGLES);
     glVertex2d(-0.5, 0.15);
     glVertex2d(-0.5, -0.15);
@@ -397,14 +437,6 @@ void GLWidget::draw_line(const std::vector<Pose2_cont>& motion)
     glEnd();
 }
 
-void GLWidget::draw_discrete_neighbors()
-{
-}
-
-void GLWidget::draw_widest_arcs()
-{
-}
-
 double GLWidget::realize_angle(int index, int num_angles)
 {
     return index * (2.0 * M_PI) / num_angles;
@@ -429,4 +461,51 @@ double GLWidget::normalize_angle(double angle)
     }
 
     return angle;
+}
+
+bool GLWidget::same_side(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, const Eigen::Vector3d& a, const Eigen::Vector3d& b) const
+{
+    Eigen::Vector3d cp1 = (b - a).cross(p1 - a);
+    Eigen::Vector3d cp2 = (b - a).cross(p2 - a);
+    return (cp1.dot(cp2) >= 0) ;
+}
+
+bool GLWidget::point_in_triangle(const Eigen::Vector3d& p, const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c) const
+{
+    return same_side(p, a, b, c) && same_side(p, b, a, c) && same_side(p, c, a, b);
+}
+
+Pose2_cont GLWidget::discretize(const Pose2_cont& pose)
+{
+    double disc_x = std::round(pose.x);
+    double disc_y = std::round(pose.y);
+    double disc_angle = realize_angle(discretize_angle(pose.yaw, num_angles_), num_angles_);
+
+    return Pose2_cont(disc_x, disc_y, disc_angle);
+}
+
+void GLWidget::clear_selection()
+{
+    selection_.start_selected = false;
+    selection_.goal_selected = false;
+    selection_.selected_goal = goals_.end();
+}
+
+void GLWidget::select_at(const QPointF& point)
+{
+    if (hits_start(point)) {
+        DEBUG_PRINT("Selected the start");
+        selection_.start_selected = true;
+    }
+    else {
+        int idx = 0;
+        for (std::list<Pose2_cont>::iterator i = goals_.begin(); i != goals_.end(); ++i) {
+            if (hits_goal(i, point)) {
+                DEBUG_PRINT("Selected goal %d", idx);
+                selection_.goal_selected = true;
+                selection_.selected_goal = i;
+            }
+            ++idx;
+        }
+    }
 }

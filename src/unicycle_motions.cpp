@@ -5,8 +5,7 @@
 double NUM_ANGLES = 16;
 int NUM_SAMPLES = 10;
 
-#define DEBUG 1
-#if DEBUG
+#ifdef DEBUG
 #define DEBUG_PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
 #else
 #define DEBUG_PRINT(fmt, ...)

@@ -1,6 +1,9 @@
 #ifndef GLWidget_h
 #define GLWidget_h
 
+#include <list>
+#include <vector>
+#include <Eigen/Dense>
 #include <QtOpenGL>
 #include "Pose2.h"
 
@@ -29,6 +32,8 @@ public:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
 
+    bool goal_selected() const { return selection_.goal_selected; }
+
 public slots:
 
     void toggle_disc_mode();
@@ -42,14 +47,16 @@ public slots:
     void set_disc_goal_x(int);
     void set_disc_goal_y(int);
 
+signals:
+
+    void gui_changed();
+
 private:
 
     bool disc_mode_;
 
     bool left_button_down_;
     bool right_button_down_;
-
-    bool draw_arrows_;
 
     QPointF start_tail_;
     QPointF goal_tail_;
@@ -60,21 +67,48 @@ private:
     Pose2_disc min_;
     Pose2_disc max_;
 
+    Pose2_cont start_;
+    std::list<Pose2_cont> goals_;
+
+    QPointF left_button_down_pos_;
+    QPointF right_button_down_pos_;
+
+    struct Selection
+    {
+        bool start_selected;
+        bool goal_selected;
+        std::list<Pose2_cont>::iterator selected_goal;
+    } selection_;
+
     int num_angles_;
+
+    void construct();
+
+    bool hits_start(const QPointF& point) const;
+    bool hits_goal(std::list<Pose2_cont>::iterator goal_idx, const QPointF& point) const;
+    bool hits_arrow(const Pose2_cont& pose, const QPointF& point) const;
 
     QPointF viewport_to_world(const QPointF& viewport_coord) const;
 
     void draw_grid();
-    void draw_arrow(double x, double y, double yaw, double r, double g, double b);
+    void draw_guidelines();
+    void draw_selection();
+    void draw_arrow(double x, double y, double yaw, double r, double g, double b, double scale = 1.0);
     void draw_line(const std::vector<Pose2_cont>& motion);
-
-    void draw_discrete_neighbors();
-    void draw_widest_arcs();
 
     double realize_angle(int disc_angle, int num_angles);
 
     double normalize_angle(double angle);
     int discretize_angle(double angle, int num_angles);
+
+    bool same_side(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, const Eigen::Vector3d& a, const Eigen::Vector3d& b) const;
+    bool point_in_triangle(const Eigen::Vector3d& p, const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c) const;
+
+    Pose2_cont discretize(const Pose2_cont& pose);
+
+    void clear_selection();
+    void select_at(const QPointF& point);
+
 };
 
 #endif
