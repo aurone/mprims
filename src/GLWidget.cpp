@@ -68,10 +68,10 @@ void GLWidget::paintGL()
 
     draw_grid();
 
-    if (!disc_mode_)
+    if (disc_mode_)
     {
         draw_guidelines();
-   }
+    }
 
     for (const Pose2_cont goal : goals_) {
         std::vector<Pose2_cont> motion = generate_unicycle_motion(start_, goal);
@@ -389,17 +389,16 @@ void GLWidget::draw_selection()
 void GLWidget::draw_guidelines()
 {
     glColor3f(0.0f, 0.0f, 1.0f);
-    if (left_button_down_) {
-        glBegin(GL_LINES);
-        glVertex2d(start_tail_.x(), start_tail_.y());
-        glVertex2d(start_head_.x(), start_head_.y());
-        glEnd();
-    }
-    if (right_button_down_) {
-        glBegin(GL_LINES);
-        glVertex2d(goal_tail_.x(), goal_tail_.y());
-        glVertex2d(goal_head_.x(), goal_head_.y());
-        glEnd();
+
+    if (left_button_down_ || right_button_down_) {
+        if (selection_.start_selected) {
+            Pose2_cont disc_start = discretize(start_);
+            draw_arrow_wireframe(disc_start.x, disc_start.y, disc_start.yaw, 0.5, 0.5, 1.0);
+        }
+        if (selection_.goal_selected) {
+            Pose2_cont disc_goal = discretize(*selection_.selected_goal);
+            draw_arrow_wireframe(disc_goal.x, disc_goal.y, disc_goal.yaw, 0.5, 0.5, 1.0);
+        }
     }
 }
 
@@ -420,9 +419,30 @@ void GLWidget::draw_arrow(double x, double y, double yaw, double r, double g, do
     glVertex2d(0.666 - 0.5, 0.15);
     glVertex2d(-0.5, 0.15);
 
-    glVertex2d(0.666 - 0.6, 0.3);
+    glVertex2d(0.666 - 0.5, 0.3);
+    glVertex2d(0.666 - 0.5, -0.3);
+    glVertex2d(0.5, 0.0);
+    glEnd();
+    glPopMatrix();
+}
+
+void GLWidget::draw_arrow_wireframe(double x, double y, double yaw, double r, double g, double b)
+{
+    glPushMatrix();
+    glColor3f(r, g, b);
+    glLoadIdentity();
+    glTranslated(x, y, 0);
+    glRotated(yaw * 180.0 / M_PI, 0.0, 0.0, 1.0);
+    glScaled(1.5, 1.5, 1.5);
+    glBegin(GL_LINE_LOOP);
+    glVertex2d(-0.5, 0.15);
+    glVertex2d(-0.5, -0.15);
+    glVertex2d(0.666 - 0.5, -0.15);
     glVertex2d(0.666 - 0.6, -0.3);
     glVertex2d(0.5, 0.0);
+    glVertex2d(0.666 - 0.6, 0.3);
+    glVertex2d(0.666 - 0.5, 0.15);
+    glVertex2d(-0.5, 0.15);
     glEnd();
     glPopMatrix();
 }

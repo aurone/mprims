@@ -94,6 +94,7 @@ private:
     void draw_guidelines();
     void draw_selection();
     void draw_arrow(double x, double y, double yaw, double r, double g, double b, double scale = 1.0);
+    void draw_arrow_wireframe(double x, double y, double yaw, double r, double g, double b);
     void draw_line(const std::vector<Pose2_cont>& motion);
 
     double realize_angle(int disc_angle, int num_angles);
