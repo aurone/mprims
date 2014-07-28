@@ -2,6 +2,7 @@
 #include <cstdio>
 #include "GLWidget.h"
 #include "DiscreteAnglesSpinBox.h"
+#include "logging.h"
 
 MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt::WindowFlags flags) :
     QMainWindow(parent, flags)
@@ -109,7 +110,7 @@ MotionPrimitiveDesignerWindow::MotionPrimitiveDesignerWindow(QWidget* parent, Qt
     start_disc_angle_spinbox_->setWrapping(true);
     goal_disc_angle_spinbox_->setWrapping(true);
 
-    render_widget_->set_num_angles(16);
+    render_widget_->set_num_angles(last_spinbox_value_);
 
     toggle_selection_mode();
 }
@@ -129,20 +130,34 @@ bool MotionPrimitiveDesignerWindow::is_pow2(unsigned i)
 void MotionPrimitiveDesignerWindow::toggle_selection_mode()
 {
     render_widget_->toggle_disc_mode();
-    update_gui();
 }
 
 void MotionPrimitiveDesignerWindow::update_gui()
 {
+    DEBUG_PRINT("Updating the gui");
+
     discrete_mode_toggle_button_->setText(QString("Toggle %1 Mode").arg(render_widget_->discrete_mode() ? "Continuous" : "Discrete"));
 
     num_disc_angles_spinbox_->setEnabled(render_widget_->discrete_mode());
+
     start_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
     start_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
     start_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());
-    goal_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode());
-    goal_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode());
-    goal_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode());
+
+    start_disc_x_spinbox_->setValue(render_widget_->start_x());
+    start_disc_y_spinbox_->setValue(render_widget_->start_y());
+    start_disc_angle_spinbox_->setValue(render_widget_->start_yaw());
+
+    goal_disc_angle_spinbox_->setEnabled(render_widget_->discrete_mode() && render_widget_->goal_selected());
+    goal_disc_x_spinbox_->setEnabled(render_widget_->discrete_mode() && render_widget_->goal_selected());
+    goal_disc_y_spinbox_->setEnabled(render_widget_->discrete_mode() && render_widget_->goal_selected());
+
     remove_goal_button_->setEnabled(render_widget_->goal_selected());
+
+    if (render_widget_->goal_selected()) {
+        goal_disc_x_spinbox_->setValue(render_widget_->goal_x());
+        goal_disc_y_spinbox_->setValue(render_widget_->goal_y());
+        goal_disc_angle_spinbox_->setValue(render_widget_->goal_yaw());
+    }
 }
 

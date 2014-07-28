@@ -17,7 +17,7 @@ public:
     GLWidget(QGLContext* context, QWidget* parent = 0, const QGLWidget* shareWidget = 0, Qt::WindowFlags f = 0);
     GLWidget(const QGLFormat& format, QWidget* parent = 0, const QGLWidget* shareWidget = 0, Qt::WindowFlags f = 0);
 
-    QSize sizeHint() const { return QSize(500, 500); }
+    QSize sizeHint() const { return QSize(800, 800); }
 
     const Pose2_disc& disc_min() const { return min_; }
     const Pose2_disc& disc_max() const { return max_; }
@@ -32,7 +32,14 @@ public:
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
 
+    int start_x() const { return (int)start_.x; }
+    int start_y() const { return (int)start_.y; }
+    int start_yaw() const { return discretize_angle(start_.yaw, num_angles_); }
+
     bool goal_selected() const { return selection_.goal_selected; }
+    int goal_x() const { return (int)selection_.selected_goal->x; }
+    int goal_y() const { return (int)selection_.selected_goal->y; }
+    int goal_yaw() const { return discretize_angle(selection_.selected_goal->yaw, num_angles_); }
 
 public slots:
 
@@ -94,13 +101,13 @@ private:
     void draw_guidelines();
     void draw_selection();
     void draw_arrow(double x, double y, double yaw, double r, double g, double b, double scale = 1.0);
-    void draw_arrow_wireframe(double x, double y, double yaw, double r, double g, double b);
+    void draw_arrow_wireframe(double x, double y, double yaw, double r, double g, double b, double scale = 1.0);
     void draw_line(const std::vector<Pose2_cont>& motion);
 
     double realize_angle(int disc_angle, int num_angles);
 
-    double normalize_angle(double angle);
-    int discretize_angle(double angle, int num_angles);
+    double normalize_angle(double angle) const;
+    int discretize_angle(double angle, int num_angles) const;
 
     bool same_side(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, const Eigen::Vector3d& a, const Eigen::Vector3d& b) const;
     bool point_in_triangle(const Eigen::Vector3d& p, const Eigen::Vector3d& a, const Eigen::Vector3d& b, const Eigen::Vector3d& c) const;
@@ -109,7 +116,6 @@ private:
 
     void clear_selection();
     void select_at(const QPointF& point);
-
 };
 
 #endif

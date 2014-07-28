@@ -4,15 +4,8 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "GLWidget.h"
+#include "logging.h"
 #include "unicycle_motions.h"
-
-#define DEBUG
-
-#ifdef DEBUG
-#define DEBUG_PRINT(fmt, ...) printf(fmt "\n", ##__VA_ARGS__); fflush(stdout)
-#else
-#define DEBUG_PRINT(fmt, ...)
-#endif
 
 static int discretize(double d, double res)
 {
@@ -59,6 +52,7 @@ void GLWidget::construct()
 void GLWidget::initializeGL()
 {
     glClearColor(1.0f, 0.98f, 0.98f, 1.0f);
+    glLineWidth(2.0f);
 }
 
 void GLWidget::paintGL()
@@ -78,9 +72,6 @@ void GLWidget::paintGL()
         draw_line(motion);
     }
 
-    // draw the selection
-    draw_selection();
-
     // draw the start
     draw_arrow(start_.x, start_.y, start_.yaw, 0.0, 1.0, 0.0);
 
@@ -88,6 +79,9 @@ void GLWidget::paintGL()
     for (const Pose2_cont goal : goals_) {
         draw_arrow(goal.x, goal.y, goal.yaw, 1.0, 0.0, 0.0);
     }
+
+    // draw the selection
+    draw_selection();
 
     glFlush();
     swapBuffers();
@@ -164,6 +158,8 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
         for (Pose2_cont& pose : goals_) {
             pose = discretize(pose);
         }
+
+        emit gui_changed();
     }
 
     if (event->button() == Qt::LeftButton) {
@@ -251,6 +247,7 @@ void GLWidget::toggle_disc_mode()
     right_button_down_ = false;
 
     update();
+    emit gui_changed();
 }
 
 void GLWidget::add_discrete_goal()
@@ -379,10 +376,10 @@ void GLWidget::draw_grid()
 void GLWidget::draw_selection()
 {
     if (selection_.start_selected) {
-        draw_arrow(start_.x, start_.y, start_.yaw, 1.0, 0.5, 1.0, 1.1);
+        draw_arrow_wireframe(start_.x, start_.y, start_.yaw, 0.0, 0.0, 1.0);
     }
     else if (selection_.goal_selected) {
-        draw_arrow(selection_.selected_goal->x, selection_.selected_goal->y, selection_.selected_goal->yaw, 1.0, 0.5, 1.0, 1.01);
+        draw_arrow_wireframe(selection_.selected_goal->x, selection_.selected_goal->y, selection_.selected_goal->yaw, 0.0, 0.0, 1.0);
     }
 }
 
@@ -393,11 +390,11 @@ void GLWidget::draw_guidelines()
     if (left_button_down_ || right_button_down_) {
         if (selection_.start_selected) {
             Pose2_cont disc_start = discretize(start_);
-            draw_arrow_wireframe(disc_start.x, disc_start.y, disc_start.yaw, 0.5, 0.5, 1.0);
+            draw_arrow_wireframe(disc_start.x, disc_start.y, disc_start.yaw, 0.5, 0.5, 1.0, 1.5);
         }
         if (selection_.goal_selected) {
             Pose2_cont disc_goal = discretize(*selection_.selected_goal);
-            draw_arrow_wireframe(disc_goal.x, disc_goal.y, disc_goal.yaw, 0.5, 0.5, 1.0);
+            draw_arrow_wireframe(disc_goal.x, disc_goal.y, disc_goal.yaw, 0.5, 0.5, 1.0, 1.5);
         }
     }
 }
@@ -426,21 +423,21 @@ void GLWidget::draw_arrow(double x, double y, double yaw, double r, double g, do
     glPopMatrix();
 }
 
-void GLWidget::draw_arrow_wireframe(double x, double y, double yaw, double r, double g, double b)
+void GLWidget::draw_arrow_wireframe(double x, double y, double yaw, double r, double g, double b, double scale)
 {
     glPushMatrix();
     glColor3f(r, g, b);
     glLoadIdentity();
     glTranslated(x, y, 0);
     glRotated(yaw * 180.0 / M_PI, 0.0, 0.0, 1.0);
-    glScaled(1.5, 1.5, 1.5);
+    glScaled(scale, scale, scale);
     glBegin(GL_LINE_LOOP);
     glVertex2d(-0.5, 0.15);
     glVertex2d(-0.5, -0.15);
     glVertex2d(0.666 - 0.5, -0.15);
-    glVertex2d(0.666 - 0.6, -0.3);
+    glVertex2d(0.666 - 0.5, -0.3);
     glVertex2d(0.5, 0.0);
-    glVertex2d(0.666 - 0.6, 0.3);
+    glVertex2d(0.666 - 0.5, 0.3);
     glVertex2d(0.666 - 0.5, 0.15);
     glVertex2d(-0.5, 0.15);
     glEnd();
@@ -462,13 +459,13 @@ double GLWidget::realize_angle(int index, int num_angles)
     return index * (2.0 * M_PI) / num_angles;
 }
 
-int GLWidget::discretize_angle(double angle, int num_angles)
+int GLWidget::discretize_angle(double angle, int num_angles) const
 {
     double thetaBinSize = 2.0 * M_PI / num_angles;
     return (int)(normalize_angle(angle + thetaBinSize / 2.0) / (2.0 * M_PI) * (num_angles));
 }
 
-double GLWidget::normalize_angle(double angle)
+double GLWidget::normalize_angle(double angle) const
 {
     // get to the range from -2PI, 2PI
     if (fabs(angle) > 2 * M_PI) {
