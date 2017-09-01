@@ -213,6 +213,7 @@ PLATFORMS
 DEPENDENCIES
   execjs
   github-pages
+  jekyll-theme-midnight
 
 BUNDLED WITH
    1.15.4
